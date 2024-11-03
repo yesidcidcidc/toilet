@@ -1,0 +1,3 @@
+[build]
+  publish = "public"
+  command = "npm run build" # Если есть команда сборки, иначе убери эту строку

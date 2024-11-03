@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Игра с Уровнями и Прокачкой</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            z-index: 10;
+        }
+        #playButton {
+            background-color: green;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #progressBarContainer {
+            position: absolute;
+            bottom: 20px;
+            left: 20%;
+            width: 60%;
+            height: 20px;
+            border: 2px solid #ff0000;
+            background-color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #progressBar {
+            height: 100%;
+            background-color: #ff4444;
+            width: 0%;
+        }
+        #levelText {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            z-index: 1;
+        }
+        #upgradeContainer {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100px;
+            background-color: #333;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #00ff00;
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            opacity: 0;
+            transition: top 1s ease, opacity 1s ease;
+            cursor: pointer;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Игра с Уровнями</h1>
+        <button id="playButton">Play</button>
+    </div>
+    <div id="progressBarContainer">
+	<canvas id="gameCanvas"></canvas>
+
+        <div id="levelText">Level 1</div>
+        <div id="progressBar"></div>
+    </div>
+
+	
+
+
+  
+
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+		
+		const backgroundColor = new THREE.Color(0x808080); // светло-серый цвет
+scene.background = backgroundColor; // Установка фона
+
+	
+	
+
+
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
+        const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, shininess: 100 });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        scene.add(player);
+		
+		        const players = {}; // Объект для хранения всех игроков
+
+function createPlayerMesh(id) {
+    const playerGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+    const playerMaterial = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff }); // Разный цвет для каждого игрока
+    const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+    playerMesh.name = id; // Сохраним ID игрока в качестве имени
+    scene.add(playerMesh);
+    return playerMesh;
+}
+
+        const cubeSize = 20;
+        const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+        const cubeEdges = new THREE.EdgesGeometry(cubeGeometry);
+        const cubeMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+        const cube = new THREE.LineSegments(cubeEdges, cubeMaterial);
+        scene.add(cube);
+
+        const balls = [];
+        const ballSpeeds = [];
+        const yellowMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00, shininess: 100 });
+
+        const redCubes = [];
+        const redCubeSpeeds = [];
+        const redMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
+
+        function createBall() {
+            const geometry = new THREE.SphereGeometry(0.3, 32, 32);
+            const ball = new THREE.Mesh(geometry, yellowMaterial);
+            ball.position.set(
+                (Math.random() - 0.5) * cubeSize,
+                (Math.random() - 0.5) * cubeSize,
+                (Math.random() - 0.5) * cubeSize
+            );
+            balls.push(ball);
+            scene.add(ball);
+
+            ballSpeeds.push(new THREE.Vector3(
+                (Math.random() - 0.5) * 0.05,
+                (Math.random() - 0.5) * 0.05,
+                (Math.random() - 0.5) * 0.05
+            ));
+        }
+
+        function createRedCube() {
+            const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const redCube = new THREE.Mesh(geometry, redMaterial);
+            redCube.position.set(
+                (Math.random() - 0.5) * cubeSize,
+                (Math.random() - 0.5) * cubeSize,
+                (Math.random() - 0.5) * cubeSize
+            );
+            redCubes.push(redCube);
+            scene.add(redCube);
+			
+
+            redCubeSpeeds.push(new THREE.Vector3(
+                (Math.random() - 0.5) * 0.05,
+                (Math.random() - 0.5) * 0.05,
+                (Math.random() - 0.5) * 0.05
+            ));
+        }
+
+        for (let i = 0; i < 5; i++) {
+            createBall();
+            createRedCube();
+        }
+
+        camera.position.set(0, 0, 5);
+
+        let cameraDistance = 5;
+        let cameraRotationY = 0;
+        let cameraRotationX = 0;
+        let score = 0;
+        let level = 1;
+
+        const progressBar = document.getElementById("progressBar");
+        const levelText = document.getElementById("levelText");
+       
+        const menu = document.getElementById("menu");
+        const playButton = document.getElementById("playButton");
+
+        playButton.addEventListener('click', () => {
+            menu.style.display = 'none';
+            animate();
+            lockMouse();
+        });
+
+        function lockMouse() {
+            document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
+            document.body.requestPointerLock();
+        }
+
+        document.addEventListener('mousemove', (event) => {
+            const sensitivity = 0.002;
+            cameraRotationY -= event.movementX * sensitivity;
+            cameraRotationX -= event.movementY * sensitivity;
+            cameraRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotationX));
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            const speed = 0.1;
+
+            let previousPosition = player.position.clone();
+            
+            if (event.key === 'w') {
+                player.position.add(forward.clone().multiplyScalar(speed));
+            } else if (event.key === 's') {
+                player.position.sub(forward.clone().multiplyScalar(speed));
+            }
+
+            const halfCubeSize = cubeSize / 2;
+            if (player.position.x < -halfCubeSize + 0.5 || player.position.x > halfCubeSize - 0.5 ||
+                player.position.y < -halfCubeSize + 0.5 || player.position.y > halfCubeSize - 0.5 ||
+                player.position.z < -halfCubeSize + 0.5 || player.position.z > halfCubeSize - 0.5) {
+                player.position.copy(previousPosition);
+                shakeCamera();
+            } else {
+                player.position.x = Math.max(-halfCubeSize + 0.5, Math.min(halfCubeSize - 0.5, player.position.x));
+                player.position.y = Math.max(-halfCubeSize + 0.5, Math.min(halfCubeSize - 0.5, player.position.y));
+                player.position.z = Math.max(-halfCubeSize + 0.5, Math.min(halfCubeSize - 0.5, player.position.z));
+            }
+        });
+
+        function shakeCamera() {
+            const shakeIntensity = 0.1;
+            const shakeDuration = 300;
+            const shakeStartTime = performance.now();
+
+            function performShake() {
+                const elapsed = performance.now() - shakeStartTime;
+                if (elapsed < shakeDuration) {
+                    camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                    camera.position.y += (Math.random() - 0.5) * shakeIntensity;
+                    camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+                    requestAnimationFrame(performShake);
+                }
+            }
+            performShake();
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = player.position.x + cameraDistance * Math.sin(cameraRotationY);
+            camera.position.y = player.position.y + cameraDistance * Math.sin(cameraRotationX);
+            camera.position.z = player.position.z + cameraDistance * Math.cos(cameraRotationX) * Math.cos(cameraRotationY);
+            camera.lookAt(player.position);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateCameraPosition();
+			updatePosition();
+			function updatePosition() {
+    playerData.x = player.position.x;
+    playerData.y = player.position.y;
+    playerData.z = player.position.z;
+
+    socket.emit('playerMoved', playerData);
+}
+
+
+
+            balls.forEach((ball, index) => {
+                ball.position.add(ballSpeeds[index]);
+
+                if (Math.abs(ball.position.x) > cubeSize / 2 - 0.3) ballSpeeds[index].x *= -1;
+                if (Math.abs(ball.position.y) > cubeSize / 2 - 0.3) ballSpeeds[index].y *= -1;
+                if (Math.abs(ball.position.z) > cubeSize / 2 - 0.3) ballSpeeds[index].z *= -1;
+
+                if (player.position.distanceTo(ball.position) < 1) {
+                    score++;
+                    progressBar.style.width = (score / 5) * 100 + '%';
+                    if (score >= 5) {
+                        level++;
+                        levelText.innerText = "Level " + level;
+                        score = 0;
+                        progressBar.style.width = '0%';
+                        
+                    }
+                    scene.remove(ball);
+                    balls.splice(index, 1);
+                    createBall();
+                }
+            });
+
+            redCubes.forEach((redCube, index) => {
+                redCube.position.add(redCubeSpeeds[index]);
+
+                if (Math.abs(redCube.position.x) > cubeSize / 2 - 0.3) redCubeSpeeds[index].x *= -1;
+                if (Math.abs(redCube.position.y) > cubeSize / 2 - 0.3) redCubeSpeeds[index].y *= -1;
+                if (Math.abs(redCube.position.z) > cubeSize / 2 - 0.3) redCubeSpeeds[index].z *= -1;
+
+                if (player.position.distanceTo(redCube.position) < 1) {
+                    score+= 3;
+                    progressBar.style.width = (score / 5) * 100 + '%';
+                    if (score >= 5) {
+                        level++;
+                        levelText.innerText = "Level " + level;
+                        score = 0;
+                        progressBar.style.width = '0%';
+                        
+                    }
+                    scene.remove(redCube);
+                    redCubes.splice(index, 1);
+                    createRedCube();
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        setInterval(createBall, 5000);
+        setInterval(createRedCube, 18180); // Спавн нового красного куба каждые 7 секунд
+    </script>
+	<script src="/socket.io/socket.io.js"></script> <!-- Подключаем библиотеку Socket.IO -->
+
+<script>
+  const socket = io();
+
+  // Создаем шар игрока
+  const playerData = {
+    x: Math.random(),
+    y: Math.random(),
+  };
+
+  function createPlayerCircle(x, y) {
+    const circle = document.createElement('div');
+    circle.style.position = 'absolute';
+    circle.style.width = '20px';
+    circle.style.height = '20px';
+    circle.style.borderRadius = '50%';
+    circle.style.backgroundColor = 'blue';
+    circle.style.left = `${x * window.innerWidth}px`;
+    circle.style.top = `${y * window.innerHeight}px`;
+    document.body.appendChild(circle);
+    return circle;
+  }
+
+</script>
+
+<script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+		socket.on('updatePlayers', (playerData) => {
+    console.log(playerData); // Логируем полученные данные
+    for (let id in playerData) {
+        if (!players[id]) {
+            // Если игрока еще нет, создаем его
+            players[id] = createPlayerMesh(id);
+        }
+        // Обновляем позицию игрока
+        players[id].position.set(playerData[id].x, playerData[id].y, playerData[id].z);
+    }
+});
+
+
+
+        
+
+
+
+    </script>
+</body>
+</html>
